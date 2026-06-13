@@ -1,0 +1,108 @@
+name: BeeBox CI
+
+# Runs the same Makefile targets used locally, so the workflow is itself proof
+# that the system provisions, configures and serves correctly on a clean machine.
+# GitHub-hosted ubuntu runners ship with Docker, so the systemd containers,
+# Terraform (Docker provider) and Ansible (Docker connection) all work directly.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # ----------------------------------------------------------------
+  # Lint / validation
+  # ----------------------------------------------------------------
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Install lint tools
+        run: pip install --quiet yamllint flake8 ansible ansible-lint
+
+      - name: Terraform fmt and validate
+        run: |
+          terraform -chdir=terraform fmt -check -recursive
+          terraform -chdir=terraform init -backend=false -input=false
+          terraform -chdir=terraform validate
+
+      - name: yamllint
+        run: yamllint -c .yamllint .
+
+      - name: flake8 (Python)
+        run: flake8 app
+
+      - name: Shell script syntax
+        run: bash -n scripts/*.sh
+
+      - name: ansible-lint (advisory)
+        continue-on-error: true
+        run: |
+          ansible-galaxy collection install -r ansible/requirements.yml
+          cd ansible && ansible-lint
+
+  # ----------------------------------------------------------------
+  # Build -> configure -> test (single job so the containers persist
+  # across steps; GitHub runs each job on a fresh VM).
+  # ----------------------------------------------------------------
+  deploy-test:
+    runs-on: ubuntu-latest
+    env:
+      LB_HOSTNAME: localhost
+      LB_PORT: "8080"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Install Ansible
+        run: pip install --quiet ansible
+
+      - name: Build infrastructure (Terraform)
+        run: make up
+
+      - name: Configure servers (Ansible)
+        run: make configure
+
+      - name: Wait for the load balancer
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fs http://localhost:8080/ >/dev/null; then
+              echo "Load balancer is ready"; exit 0
+            fi
+            sleep 3
+          done
+          echo "Load balancer did not become ready in time" >&2
+          exit 1
+
+      - name: Smoke test (LB endpoint + round-robin)
+        run: make test
+
+      - name: Upload security/audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lynis-reports
+          path: reports/
+          if-no-files-found: ignore
+
+      - name: Tear down
+        if: always()
+        run: make down

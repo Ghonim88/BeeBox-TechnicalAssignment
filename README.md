@@ -12,7 +12,7 @@ It demonstrates the three DevOps pillars end to end:
 |---|---|
 | Infrastructure as Code | **Terraform** (local Docker provider) |
 | Configuration Management | **Ansible** |
-| CI/CD Automation | **GitLab CI** |
+| CI/CD Automation | **GitHub Actions** |
 
 The load balancer answers at `http://ucpe.swisscom.com:8080`, and `GET /api/data`
 returns rows from the database as JSON.
@@ -68,7 +68,7 @@ reachable only on the private `beebox-net` network and resolve each other by nam
 ├── scripts/            # setup-hosts.sh, smoke-test.sh
 ├── reports/            # lynis audit evidence (generated)
 ├── Makefile            # single entry point (make help)
-└── .gitlab-ci.yml      # CI/CD pipeline
+└── .github/workflows/ci.yml   # CI/CD pipeline (GitHub Actions)
 ```
 
 ---
@@ -197,20 +197,19 @@ Additional security measures applied:
 
 ## CI/CD pipeline
 
-`.gitlab-ci.yml` runs the same Makefile targets used locally, so the pipeline is
-itself proof that the system provisions and works on a clean machine:
+`.github/workflows/ci.yml` runs the same Makefile targets used locally, so the
+workflow is itself proof that the system provisions and works on a clean machine.
+GitHub-hosted `ubuntu-latest` runners ship with Docker, so the systemd containers,
+Terraform (Docker provider) and Ansible (Docker connection) all work directly.
 
-| Stage | Action |
+| Job | Action |
 |---|---|
 | `lint` | `terraform fmt`/`validate`, `yamllint`, `flake8`, `ansible-lint`, shell syntax |
-| `build` | `make up` (Terraform apply) |
-| `configure` | `make configure` (Ansible) |
-| `test` | `make test` (curl the LB, assert JSON + round-robin) |
-| `cleanup` | `terraform destroy` (always runs) |
+| `deploy-test` | `make up` (Terraform) -> `make configure` (Ansible) -> `make test` (curl the LB, assert JSON + round-robin) -> `make down` (always) |
 
-**Runner requirements:** a self-hosted GitLab runner using the **shell executor** on
-a Linux host that has Docker, Terraform, Ansible, Python 3 and Make installed.
-(In CI the smoke test targets the runner's published `localhost:8080`.)
+Build, configure and test live in a **single job** so the containers persist across
+steps (GitHub runs each job on a fresh VM). The lynis audit reports are uploaded as
+a build artifact, and the smoke test targets the runner's published `localhost:8080`.
 
 ---
 
