@@ -239,3 +239,4 @@ a Linux host that has Docker, Terraform, Ansible, Python 3 and Make installed.
   friction.
 - **Credentials** are kept in `ansible/group_vars/all.yml` for this prototype; in
   production they would live in Ansible Vault or a secrets manager.
+
