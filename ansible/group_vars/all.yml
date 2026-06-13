@@ -1,0 +1,20 @@
+---
+# Shared configuration for all roles (single source of truth).
+# For a local prototype these are kept in plain text; in production they would
+# live in Ansible Vault or a secrets manager.
+
+# Database
+db_name: beebox
+db_user: beebox
+db_password: beebox_pw
+db_root_password: root_pw
+
+# Application
+app_dir: /opt/beebox
+app_port: 5000
+
+# Database host used by the web servers (Docker network DNS name).
+db_host: db
+
+# Hostname the load balancer answers on (matches /etc/hosts and Terraform).
+lb_hostname: ucpe.swisscom.com

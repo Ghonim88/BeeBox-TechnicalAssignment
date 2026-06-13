@@ -1,0 +1,70 @@
+---
+- name: Install Python runtime and venv support
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-venv
+      - python3-pip
+    state: present
+
+- name: Create the application service user
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+
+- name: Create the application directory
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0755"
+
+- name: Deploy the application source
+  ansible.builtin.copy:
+    # App source lives at the repo root (../app), outside this role
+    src: "{{ playbook_dir }}/../app/{{ item }}"
+    dest: "{{ app_dir }}/{{ item }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0644"
+  loop:
+    - app.py
+    - db.py
+    - requirements.txt
+  notify: Restart beebox-api
+
+# A venv is required because Debian 12 blocks system-wide pip installs (PEP 668)
+- name: Install Python dependencies into a virtualenv
+  ansible.builtin.pip:
+    requirements: "{{ app_dir }}/requirements.txt"
+    virtualenv: "{{ app_dir }}/venv"
+    virtualenv_command: python3 -m venv
+  notify: Restart beebox-api
+
+- name: Render the application environment file
+  ansible.builtin.template:
+    src: beebox.env.j2
+    dest: "{{ app_dir }}/app.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0640"  # restricted: contains the DB password
+  notify: Restart beebox-api
+
+- name: Install the systemd service unit
+  ansible.builtin.template:
+    src: beebox.service.j2
+    dest: /etc/systemd/system/beebox-api.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart beebox-api
+
+- name: Enable and start the BeeBox API service
+  ansible.builtin.systemd:
+    name: beebox-api
+    state: started
+    enabled: true
+    daemon_reload: true

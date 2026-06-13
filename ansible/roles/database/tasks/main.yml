@@ -1,0 +1,56 @@
+---
+- name: Install MariaDB server and the Python MySQL client
+  ansible.builtin.apt:
+    name:
+      - mariadb-server
+      - python3-pymysql
+    state: present
+
+- name: Configure MariaDB to listen on all interfaces
+  ansible.builtin.copy:
+      # 0.0.0.0 so web-1/web-2 can reach the DB over the Docker network
+    dest: /etc/mysql/mariadb.conf.d/99-beebox.cnf
+    content: |
+      [mysqld]
+      bind-address = 0.0.0.0
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart mariadb
+
+- name: Ensure MariaDB is started and enabled
+  ansible.builtin.systemd:
+    name: mariadb
+    state: started
+    enabled: true
+
+- name: Apply any pending config change before connecting
+  ansible.builtin.meta: flush_handlers
+
+- name: Create the application database
+  community.mysql.mysql_db:
+    name: "{{ db_name }}"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Copy schema and seed data to the server
+  ansible.builtin.copy:
+    src: init.sql
+    dest: /tmp/init.sql
+    mode: "0644"
+
+- name: Load schema and seed data
+  community.mysql.mysql_db:
+    name: "{{ db_name }}"
+    state: import
+    target: /tmp/init.sql
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Create the read-only application user
+  community.mysql.mysql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    host: "%"
+    priv: "{{ db_name }}.*:SELECT" # Read-only access to the database
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock

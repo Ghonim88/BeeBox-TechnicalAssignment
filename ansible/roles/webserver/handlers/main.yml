@@ -1,0 +1,6 @@
+---
+- name: Restart beebox-api
+  ansible.builtin.systemd:
+    name: beebox-api
+    state: restarted
+    daemon_reload: true

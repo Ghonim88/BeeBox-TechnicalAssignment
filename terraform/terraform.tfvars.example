@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and adjust as needed: cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars is gitignored.
+
+# Docker endpoint. Leave empty to use your active docker context / DOCKER_HOST.
+# Colima example:
+# docker_host = "unix:///Users/<you>/.colima/default/docker.sock"
+docker_host = ""
+
+# Load balancer exposure.
+lb_port     = 8080
+lb_hostname = "ucpe.swisscom.com"

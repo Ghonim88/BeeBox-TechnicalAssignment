@@ -1,0 +1,26 @@
+---
+- name: Install Nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+
+- name: Remove the default Nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Deploy the load balancer configuration
+  ansible.builtin.template:
+    src: beebox.conf.j2
+    dest: /etc/nginx/conf.d/beebox.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Ensure Nginx is started and enabled
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: true

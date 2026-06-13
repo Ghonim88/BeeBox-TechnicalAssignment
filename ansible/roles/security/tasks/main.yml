@@ -1,0 +1,23 @@
+---
+- name: Update apt cache and apply available package upgrades
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: safe
+
+- name: Install the Lynis security auditing tool
+  ansible.builtin.apt:
+    name: lynis
+    state: present
+
+# Read-only audit, so changed_when is false (it inspects, it doesn't modify).
+- name: Run a Lynis system audit
+  ansible.builtin.command: lynis audit system --no-colors
+  register: lynis_audit
+  changed_when: false
+
+- name: Save the Lynis report as evidence (one per host)
+  ansible.builtin.copy:
+    content: "{{ lynis_audit.stdout }}"
+    dest: "{{ playbook_dir }}/../reports/lynis-{{ inventory_hostname }}.txt"
+    mode: "0644"
+  delegate_to: localhost

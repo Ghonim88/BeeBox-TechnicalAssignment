@@ -1,0 +1,19 @@
+# Managed by Ansible.
+# Round-robin (Nginx default) across the web servers in the 'webservers' group.
+upstream beebox_backend {
+{% for host in groups['webservers'] %} #loop through the webservers group and add the server to the backend
+    server {{ host }}:{{ app_port }};
+{% endfor %}
+}
+
+server {
+    listen 80;
+    server_name {{ lb_hostname }};
+
+    location / {
+        proxy_pass http://beebox_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}

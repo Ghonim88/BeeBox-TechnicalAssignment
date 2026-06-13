@@ -1,0 +1,15 @@
+# Managed by Ansible.
+[Unit]
+Description=BeeBox REST API (Flask + Gunicorn)
+After=network.target
+
+[Service]
+User={{ app_user }}
+Group={{ app_user }}
+WorkingDirectory={{ app_dir }}
+EnvironmentFile={{ app_dir }}/app.env
+ExecStart={{ app_dir }}/venv/bin/gunicorn --bind 0.0.0.0:{{ app_port }} --workers 2 app:app
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

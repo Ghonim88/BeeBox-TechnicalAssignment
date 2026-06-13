@@ -1,0 +1,36 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# Environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Ansible
+*.retry
+
+# Security / scan reports (generated; keep the folder, ignore outputs)
+reports/*
+!reports/.gitkeep
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,29 @@
+---
+# Configures the whole system in dependency order:
+# common -> database -> web servers -> load balancer -> security audit.
+
+- name: Common base setup for all nodes
+  hosts: all
+  gather_facts: true
+  roles:
+    - common
+
+- name: Configure the database
+  hosts: database
+  roles:
+    - database
+
+- name: Configure the web servers
+  hosts: webservers
+  roles:
+    - webserver
+
+- name: Configure the load balancer
+  hosts: loadbalancer
+  roles:
+    - loadbalancer
+
+- name: Security updates and audit
+  hosts: all
+  roles:
+    - security
