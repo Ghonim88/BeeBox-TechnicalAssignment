@@ -25,9 +25,10 @@ venv/
 # Ansible
 *.retry
 
-# Security / scan reports (generated; keep the folder, ignore outputs)
+# Security / scan reports: keep the committed lynis evidence, ignore anything else
 reports/*
 !reports/.gitkeep
+!reports/lynis-*.txt
 
 # OS / editor
 .DS_Store

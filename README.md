@@ -77,14 +77,16 @@ reachable only on the private `beebox-net` network and resolve each other by nam
 
 A Docker engine plus the standard IaC tooling on your machine (or on the CI runner):
 
-- **Docker** (Docker Desktop, **Colima**, OrbStack, or native Linux Docker)
+- **Docker** — **Docker Desktop is recommended** (simplest: it provides the daemon
+  with no extra configuration). Colima, OrbStack, or native Linux Docker also work.
 - **Terraform** >= 1.5
 - **Ansible** (with `ansible-galaxy`)
 - **Python 3** and **Make**
 
 > **Docker endpoint (portability):** Terraform/Ansible talk to your local Docker
-> daemon and no socket path is hardcoded. If you are not using the default context,
-> export `DOCKER_HOST`. For Colima:
+> daemon and no socket path is hardcoded. With **Docker Desktop** the default socket
+> is used automatically — nothing to set. Only if you use a non-default engine do you
+> need to export `DOCKER_HOST`, e.g. for Colima:
 > ```bash
 > export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
 > ```
@@ -238,4 +240,41 @@ a build artifact, and the smoke test targets the runner's published `localhost:8
   friction.
 - **Credentials** are kept in `ansible/group_vars/all.yml` for this prototype; in
   production they would live in Ansible Vault or a secrets manager.
+
+---
+
+## Testing & verification
+
+The system is verified two complementary ways:
+
+1. **Automated (CI):** every push runs the GitHub Actions pipeline, which provisions
+   the stack, configures it, and runs the smoke test — asserting `GET /api/data`
+   returns HTTP 200 + valid JSON and that round-robin alternates between `web-1`
+   and `web-2`.
+2. **Interactive (manual):** the endpoints were exercised with `curl` and Postman:
+   - `GET /api/data` -> seeded rows as JSON, with `served_by` identifying the backend
+   - `GET /health` -> status + serving host
+   - repeated calls alternate `web-1` / `web-2`, confirming load balancing
+
+### Example requests (Postman)
+
+`GET /api/data` returns the seeded rows as JSON, with `served_by` showing which web
+server answered:
+
+![GET /api/data returns JSON from the database, served by web-1](docs/screenshots/api-data.png)
+
+Round-robin in action - two consecutive `GET /health` calls are answered by
+different backends (`web-1` then `web-2`):
+
+![GET /health served by web-1](docs/screenshots/round-robin1.png)
+![The next request served by web-2](docs/screenshots/round-robin2.png)
+
+### Note on the testing environment
+
+Local end-to-end testing was performed on a **personal machine running Docker
+Desktop**. The corporate environment enforces TLS interception via a security
+proxy/CA, which blocks direct Docker Hub image pulls; rather than weaken that
+control locally, a clean machine without those restrictions was used for the
+interactive run. The **GitHub Actions pipeline provides the environment-independent
+verification**, reproducing the full provision -> configure -> test flow on every push.
 
