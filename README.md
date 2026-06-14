@@ -249,6 +249,36 @@ friction.
 production they would live in Ansible Vault or a secrets manager.
 
 ---
+## Production hardening / future improvements
+
+This prototype is intentionally scoped to demonstrate the IaC + configuration
+management + CI/CD loop on a single machine. The two trade-offs below are
+deliberate for the demo and would be addressed before running this stack in
+production:
+
+- **Privileged containers.** Each node runs `systemd` as PID 1 with
+  `privileged = true` and a host cgroup mount so Ansible can manage it like a
+  real server. In production the same Ansible roles would target real VMs or
+  cloud instances and `privileged` would not be needed — only the Terraform
+  provider would change.
+- **Secrets in plaintext.** Database credentials live in
+  `ansible/group_vars/all.yml` for readability. In production they would be
+  encrypted with **Ansible Vault**, with the vault password supplied to CI via
+  an encrypted GitHub Actions secret. A real secrets manager (HashiCorp Vault,
+  AWS Secrets Manager, Azure Key Vault) would be the next step.
+
+Other natural improvements, out of scope for this assignment:
+
+- **TLS** at the load balancer (Let's Encrypt or a corporate CA).
+- **High availability** for the LB (active/passive with `keepalived`, or a
+  managed cloud LB).
+- **Backups** for the database (nightly `mysqldump` + binlog retention for PITR).
+- **Observability** — Prometheus metrics + central structured logging.
+- **Image vulnerability scanning** (Trivy/Grype) on every CI run — complements Lynis: Lynis audits configuration of the running system, **Trivy/Grype** audits known CVEs in the packages inside the pinned base image and in the Python dependencies.
+- **Dynamic Ansible inventory** generated from `terraform output -json` for
+  scaling beyond two web servers.
+
+---
 
 ## Testing & verification
 

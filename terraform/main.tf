@@ -48,6 +48,10 @@ resource "docker_container" "node" {
   image    = docker_image.base.image_id
 
   # --- systemd-in-container requirements  to behave like VMs so Ansible can manage them---
+  /* NOTE: `privileged = true` and the host cgroup mount are required to run systemd as PID 1.
+   Deliberate demo trade-off: in production the same Ansible roles would target real
+   VMs or cloud instances and `privileged` would not be needed.
+   See README "Production hardening / future improvements".*/
   privileged    = true
   cgroupns_mode = "host"
   command       = ["/lib/systemd/systemd"]
