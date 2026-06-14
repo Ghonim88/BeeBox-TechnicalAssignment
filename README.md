@@ -227,7 +227,7 @@ a build artifact, and the smoke test targets the runner's published `localhost:8
 | ---------------------------- | ------------------------------------- | -------------------------------------------- |
 | `terraform/variables.tf`     | `lb_port`                             | `8080`                                       |
 | `terraform/variables.tf`     | `web_replica_count`                   | `2`                                          |
-| `terraform/variables.tf`     | `base_image`                          | `geerlingguy/docker-debian12-ansible:latest` |
+| `terraform/variables.tf`     | `base_image`                          | `geerlingguy/docker-debian12-ansible@sha256:1f76107285118095a97e14673de67ee7a4372a840b35223cd0c1212fdd3cf5b3` |
 | `ansible/group_vars/all.yml` | `db_name` / `db_user` / `db_password` | `beebox` / `beebox` / `beebox_pw`            |
 | `ansible/group_vars/all.yml` | `app_port`                            | `5000`                                       |
 | `ansible/group_vars/all.yml` | `lb_hostname`                         | `ucpe.swisscom.com`                          |

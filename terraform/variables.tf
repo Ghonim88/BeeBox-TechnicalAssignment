@@ -19,11 +19,25 @@ variable "network_name" {
 variable "base_image" {
   description = <<-EOT
     Systemd-enabled, Python-ready base image used for all nodes so containers
-    behave like real servers (systemctl, apt, lynis). Pin by digest for full
-    reproducibility, e.g. "geerlingguy/docker-debian12-ansible@sha256:<digest>".
+    behave like real servers (systemctl, apt, lynis). Pinned by digest for full
+    reproducibility and to avoid the moving ":latest" tag. The digest below
+    points at the multi-arch manifest index, so it resolves correctly on both
+    linux/amd64 and linux/arm64.
+
+    To bump: `docker buildx imagetools inspect geerlingguy/docker-debian12-ansible:latest`
+    and copy the top-level "Digest:" value.
   EOT
   type        = string
-  default     = "geerlingguy/docker-debian12-ansible:latest"
+  # Pinned by digest instead of ":latest" so the exact image bits are locked in:
+  # reproducible across machines/CI, immune to silent upstream republishes, and
+  # gives us a stable target for vulnerability scans (Trivy/Lynis reports stay
+  # meaningful between runs). The validation below enforces this at plan time.
+  default = "geerlingguy/docker-debian12-ansible@sha256:1f76107285118095a97e14673de67ee7a4372a840b35223cd0c1212fdd3cf5b3"
+
+  validation {
+    condition     = can(regex("@sha256:[0-9a-f]{64}$", var.base_image))
+    error_message = "base_image must be pinned by digest, e.g. \"repo/name@sha256:<64-hex>\". Tagged refs like \":latest\" are not allowed."
+  }
 }
 
 variable "web_replica_count" {
