@@ -29,7 +29,7 @@ resource "docker_image" "base" {
   keep_locally = true # don't delete the image after the container is destroyed, faster iterations
 }
 
-# Private network so nodes resolve each other by name (db, web-1, web-2, lb). !!
+# Private network so nodes resolve each other by name (db, web-1, web-2, lb).
 resource "docker_network" "beebox" {
   name   = var.network_name
   driver = "bridge"

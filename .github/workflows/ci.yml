@@ -16,7 +16,7 @@ jobs:
   # Lint / validation
   # ----------------------------------------------------------------
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # pinned LTS for reproducibility (avoid surprise breakage when 'latest' migrates)
     steps:
       - uses: actions/checkout@v4
 
@@ -57,7 +57,7 @@ jobs:
   # across steps; GitHub runs each job on a fresh VM).
   # ----------------------------------------------------------------
   deploy-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       LB_HOSTNAME: localhost
       LB_PORT: "8080"
