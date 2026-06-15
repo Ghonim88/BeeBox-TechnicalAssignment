@@ -25,9 +25,11 @@ returns rows from the database as JSON.
 
 ```mermaid
 flowchart TD
-    client["client<br/>curl / browser"] -->|"http://ucpe.swisscom.com:8080"| lb
-    subgraph net [Docker network beebox-net]
-        lb["lb<br/>Nginx :80 (round-robin)"]
+    client["Client<br/>curl / browser"]
+    client -->|"HTTP via ucpe.swisscom.com:8080"| lb
+
+    subgraph net["Docker network: beebox-net"]
+        lb["lb<br/>Nginx :80<br/>round-robin"]
         web1["web-1<br/>Flask + Gunicorn :5000"]
         web2["web-2<br/>Flask + Gunicorn :5000"]
         db[("db<br/>MariaDB :3306<br/>seeded items table")]
@@ -56,21 +58,39 @@ reachable only on the private `beebox-net` network and resolve each other by nam
 
 ```
 .
-├── app/                # REST API source (Flask + Gunicorn)
-│   ├── app.py          #   routes: /api/data, /health, /
-│   ├── db.py           #   PyMySQL access with connection retry
+├── app/                            # REST API source (Flask + Gunicorn)
+│   ├── app.py                      #   routes: /api/data, /health, /
+│   ├── db.py                       #   PyMySQL access with connection retry
 │   └── requirements.txt
-├── terraform/          # IaC: network + 4 systemd containers
-│   ├── versions.tf  variables.tf  main.tf  outputs.tf
+├── terraform/                      # IaC: network + 4 systemd containers
+│   ├── versions.tf
+│   ├── variables.tf
+│   ├── main.tf
+│   ├── outputs.tf
 │   └── terraform.tfvars.example
-├── ansible/            # Configuration management
-│   ├── ansible.cfg  inventory.ini  requirements.yml  playbook.yml
-│   ├── group_vars/all.yml
-│   └── roles/{common,database,webserver,loadbalancer,security}
-├── scripts/            # setup-hosts.sh, smoke-test.sh
-├── reports/            # lynis audit evidence (generated)
-├── Makefile            # single entry point (make help)
-└── .github/workflows/ci.yml   # CI/CD pipeline (GitHub Actions)
+├── ansible/                        # Configuration management
+│   ├── ansible.cfg
+│   ├── inventory.ini
+│   ├── requirements.yml
+│   ├── playbook.yml
+│   ├── group_vars/
+│   │   └── all.yml
+│   └── roles/
+│       ├── common/
+│       ├── database/
+│       ├── webserver/
+│       ├── loadbalancer/
+│       └── security/
+├── scripts/                        # Helper shell scripts
+│   ├── setup-hosts.sh
+│   └── smoke-test.sh
+├── docs/
+│   └── screenshots/                # Postman screenshots embedded in this README
+├── reports/                        # Lynis audit evidence (generated)
+├── Makefile                        # Single entry point (run `make help`)
+└── .github/
+    └── workflows/
+        └── ci.yml                  # CI/CD pipeline (GitHub Actions)
 ```
 
 ---
