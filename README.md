@@ -189,11 +189,12 @@ ls reports/
 grep "Hardening index" reports/lynis-web-1.txt
 ```
 
-In CI these reports are uploaded as **job artifacts** from the `configure` stage.
+In CI these reports are uploaded as **job artifacts** by the `deploy-test` job
+(see the `Upload security/audit evidence` step in `.github/workflows/ci.yml`).
 
 Additional security measures applied:
 
-- The database application user is granted `**SELECT` only** (the API is read-only).
+- The database application user is granted **`SELECT` only** (the API is read-only).
 - The web service runs as a dedicated **non-root** user (`beebox`) under systemd.
 - The environment file containing the DB password is mode `0640`.
 - Only the load balancer port is exposed; DB and web nodes stay on the private network.
@@ -204,9 +205,9 @@ Additional security measures applied:
 
 `.github/workflows/ci.yml` runs the same Makefile targets used locally, so the
 workflow is itself proof that the system provisions and works on a clean machine.
-GitHub-hosted `ubuntu-latest` runners ship with Docker, so the systemd containers,
-Terraform (Docker provider) and Ansible (Docker connection) all work directly.
-
+The runners are pinned to `ubuntu-24.04` (LTS) for reproducibility, and they ship
+with Docker, so the systemd containers, Terraform (Docker provider), and Ansible
+(Docker connection) all work directly.
 
 | Job           | Action                                                                                                                              |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -249,6 +250,7 @@ friction.
 production they would live in Ansible Vault or a secrets manager.
 
 ---
+
 ## Production hardening / future improvements
 
 This prototype is intentionally scoped to demonstrate the IaC + configuration
@@ -298,19 +300,17 @@ The system is verified two complementary ways:
 `GET /api/data` returns the seeded rows as JSON, with `served_by` showing which web
 server answered:
 
-GET /api/data returns JSON from the database, served by web-1
+![GET /api/data returns JSON from the database, served by web-1](docs/screenshots/api-data.png)
 
-Round-robin in action - two consecutive `GET /health` calls are answered by
+Round-robin in action — two consecutive `GET /health` calls are answered by
 different backends (`web-1` then `web-2`):
 
-GET /health served by web-1
-The next request served by web-2
+![GET /health served by web-1](docs/screenshots/round-robin1.png)
+
+![The next request served by web-2](docs/screenshots/round-robin2.png)
 
 ### Note on the testing environment
 
 Local end-to-end testing was performed on a **personal machine running Docker
-Desktop**. The corporate environment enforces TLS interception via a security
-proxy/CA, which blocks direct Docker Hub image pulls; rather than weaken that
-control locally, a clean machine without those restrictions was used for the
-interactive run. The **GitHub Actions pipeline provides the environment-independent
+Desktop**. The **GitHub Actions pipeline provides the environment-independent
 verification**, reproducing the full provision -> configure -> test flow on every push.
